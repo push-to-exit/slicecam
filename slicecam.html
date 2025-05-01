@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thicker Vertical Slices Webcam</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: black; /* Black background */
+    }
+    canvas {
+      border: none; /* Remove border */
+      box-shadow: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <script>
+    async function startWebcam() {
+      try {
+        const video = document.createElement('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        
+        video.srcObject = stream;
+        video.play();
+
+        // Set canvas dimensions to match the video
+        video.addEventListener('loadedmetadata', () => {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+        });
+
+        function swapVerticalSlices() {
+          const sliceWidth = 10; // Thicker slices
+          const slices = [];
+          const sliceOrder = [];
+
+          // Draw the video onto the canvas
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          // Extract vertical slices
+          for (let x = 0; x < canvas.width; x += sliceWidth) {
+            const slice = ctx.getImageData(x, 0, sliceWidth, canvas.height);
+            slices.push(slice);
+          }
+
+          // Generate static arrangement: Move every third slice to the left
+          for (let i = 0; i < slices.length; i++) {
+            if (i % 3 === 0 && i > 0) {
+              sliceOrder[i - 1] = slices[i];
+              sliceOrder[i] = slices[i - 1];
+            } else if (!sliceOrder[i]) {
+              sliceOrder[i] = slices[i];
+            }
+          }
+
+          // Draw arranged slices back onto the canvas
+          for (let i = 0; i < sliceOrder.length; i++) {
+            ctx.putImageData(sliceOrder[i], i * sliceWidth, 0);
+          }
+
+          requestAnimationFrame(swapVerticalSlices);
+        }
+
+        swapVerticalSlices();
+      } catch (error) {
+        console.error('Error accessing webcam:', error);
+        alert('Unable to access webcam. Please check your permissions.');
+      }
+    }
+
+    startWebcam();
+  </script>
+</body>
+</html>
